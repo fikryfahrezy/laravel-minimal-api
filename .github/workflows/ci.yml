@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          extensions: mbstring, dom, fileinfo, pdo_sqlite, sqlite3
+
+      - name: Setup Composer cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Lint PHP
+        run: composer lint
+
+      - name: Check formatting
+        run: composer format:check
+
+  test:
+    name: Test
+    runs-on: ubuntu-24.04
+
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          extensions: mbstring, dom, fileinfo, pdo_sqlite, sqlite3
+
+      - name: Setup Composer cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Prepare application environment
+        run: cp .env.example .env
+
+      - name: Run tests
+        run: composer test
