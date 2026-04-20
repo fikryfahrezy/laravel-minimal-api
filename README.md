@@ -82,7 +82,8 @@ docker compose up --build
 What it does:
 
 - starts the API at `http://localhost:8000`
-- runs `composer install` and generates `APP_KEY` if needed on container startup
+- bakes the application and Composer dependencies into the image at build time
+- generates `APP_KEY` on container startup if needed
 
 Database note:
 
@@ -94,6 +95,7 @@ Useful commands:
 
 ```bash
 docker compose up --build -d
+docker compose build --no-cache
 docker compose exec app php artisan migrate
 docker compose exec app php artisan test
 docker compose exec app composer docs
