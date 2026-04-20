@@ -11,6 +11,13 @@ WORKDIR /var/www/html
 
 COPY . /var/www/html
 
+RUN mkdir -p \
+    storage/framework/cache/data \
+    storage/framework/sessions \
+    storage/framework/testing \
+    storage/framework/views \
+    storage/logs
+
 RUN composer install --no-interaction --prefer-dist
 
 EXPOSE 8000
