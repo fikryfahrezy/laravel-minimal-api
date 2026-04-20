@@ -56,6 +56,8 @@ Todo list query parameters:
 - Swagger UI: `GET /api/documentation`
 - Generate docs: `composer docs`
 
+For HTTPS deployments behind a reverse proxy or tunnel, set `APP_URL` to the public `https://...` origin and configure `TRUSTED_PROXIES=*` so generated Swagger asset and docs URLs keep the correct scheme.
+
 ## Local Development
 
 Create a MySQL database matching `DB_DATABASE` in `.env`, then run:
