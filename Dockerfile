@@ -18,13 +18,17 @@ COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
 WORKDIR /var/www/html
 
-RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache
-
-RUN chown -R unit:unit /var/www/html/storage bootstrap/cache && chmod -R 775 /var/www/html/storage
-
 COPY . .
 
-RUN chown -R unit:unit storage bootstrap/cache && chmod -R 775 storage bootstrap/cache
+RUN mkdir -p \
+  storage/framework/cache/data \
+  storage/framework/sessions \
+  storage/framework/testing \
+  storage/framework/views \
+  storage/logs \
+  bootstrap/cache \
+  && chown -R unit:unit storage bootstrap/cache \
+  && chmod -R 775 storage bootstrap/cache
 
 RUN composer install --prefer-dist --optimize-autoloader --no-interaction
 
