@@ -1,25 +1,38 @@
-FROM php:8.3-cli-bookworm
+FROM unit:1.34.1-php8.3
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends git unzip libzip-dev default-mysql-client \
-    && docker-php-ext-install pdo_mysql \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt update && apt install -y \
+    curl unzip git libicu-dev libzip-dev libpng-dev libjpeg-dev libfreetype6-dev libssl-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) pcntl opcache pdo pdo_mysql intl zip gd exif ftp bcmath \
+    && pecl install redis \
+    && docker-php-ext-enable redis
 
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+RUN echo "opcache.enable=1" > /usr/local/etc/php/conf.d/custom.ini \
+    && echo "opcache.jit=tracing" >> /usr/local/etc/php/conf.d/custom.ini \
+    && echo "opcache.jit_buffer_size=256M" >> /usr/local/etc/php/conf.d/custom.ini \
+    && echo "memory_limit=512M" > /usr/local/etc/php/conf.d/custom.ini \        
+    && echo "upload_max_filesize=64M" >> /usr/local/etc/php/conf.d/custom.ini \
+    && echo "post_max_size=64M" >> /usr/local/etc/php/conf.d/custom.ini
+
+COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
 WORKDIR /var/www/html
 
-COPY . /var/www/html
+RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache
 
-RUN mkdir -p \
-    storage/framework/cache/data \
-    storage/framework/sessions \
-    storage/framework/testing \
-    storage/framework/views \
-    storage/logs
+RUN chown -R unit:unit /var/www/html/storage bootstrap/cache && chmod -R 775 /var/www/html/storage
 
-RUN composer install --no-interaction --prefer-dist
+COPY . .
+
+RUN chown -R unit:unit storage bootstrap/cache && chmod -R 775 storage bootstrap/cache
+
+RUN composer install --prefer-dist --optimize-autoloader --no-interaction
+
+COPY unit.json /docker-entrypoint.d/unit.json
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=5 CMD ["php", "-r", "exit(@file_get_contents('http://127.0.0.1:8000/up') === false ? 1 : 0);"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8000/up || exit 1
+
+CMD ["unitd", "--no-daemon"]

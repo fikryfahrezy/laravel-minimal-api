@@ -1,23 +1,16 @@
 services:
-  app:
+  back-end:
     build:
       context: .
-      dockerfile: Dockerfile
-    working_dir: /var/www/html
+      dockerfile: ./Dockerfile
+    restart: unless-stopped
     env_file:
       - path: ./.env
         required: true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/up"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    healthcheck:
-      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8000/up') === false ? 1 : 0);"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-    command: >
-      sh -lc "
-      if [ ! -f .env ]; then cp .env.example .env; fi &&
-      if ! grep -q '^APP_KEY=base64:' .env; then php artisan key:generate --ansi --force; fi &&
-      php artisan serve --host=0.0.0.0 --port=8000
-      "
